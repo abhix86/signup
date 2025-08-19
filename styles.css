@@ -184,3 +184,46 @@ hr{
   border: 1px solid #c6f5c8
 }
 
+
+
+
+
+
+
+
+
+
+@media (max-width: 600px) {
+  .main {
+    width: 90%; 
+    height: auto;
+    padding: 20px 10px;
+  }
+
+  .box {
+    font-size: 1.2em;
+    padding: 1% 0;
+  }
+
+  .inputs, .bttns {
+    width: 100%;
+    max-width: 100%;
+    gap: 15px;
+    margin: 20px auto;
+  }
+
+  .inputs input, .bttn, .bttn.small {
+    font-size: 14px;
+    padding: 10px 12px;
+    height: 45px;
+  }
+
+  .bttn.sign-up {
+    font-size: 15px;
+  }
+
+  label {
+    font-size: 14px;
+  }
+}
+
