@@ -1,20 +1,5 @@
-/*     async function testApi() {
-      try {
-        const res = await fetch("http://localhost:5500/api/v1/auth/sign-up");
-        const data = await res.json();
+// Initializing the buttons to variable
 
-        // Pretty-print JSON to <pre>
-        document.getElementById("output").textContent =
-          JSON.stringify(data, null, 2);
-      } catch (err) {
-        document.getElementById("output").textContent =
-          "Error: " + err.message;
-      }
-    }
-
-    testApi(); */
-
-     // Initializing the buttons to variable
 const signUpBttn = document.getElementById('sign-up')
 const signInBttn = document.getElementById('sign-in')
 const deleteBttn = document.getElementById('del')
@@ -29,10 +14,30 @@ const inputs = [
 ];
 let hasRun = '';
 
+function showMessage(type, message, isHtml = false) {
+  errorDiv.classList.remove("error", "success", "warning");
+  errorDiv.classList.add(type);
+  errorDiv.style.display = "block";
+  if (isHtml) {
+    errorDiv.innerHTML = message;
+  } else {
+    errorDiv.textContent = message;
+  }
+}
+
+signInBttn.addEventListener('click', () => {
+  showMessage("error", "Oopsie: No API endpoint found for sign-in!");
+});
+deleteBttn.addEventListener('click', () => {
+  showMessage("error", "Oopsie: No API endpoint found for delete-account!");
+});
+
+
+
+
 signUpBttn.addEventListener("click", () => {
   let hasError = false;
-  errorDiv.style.display = "none"; 
-  errorDiv.textContent = "";       
+  errorDiv.style.display = "none";
 
   const userData = {};
 
@@ -40,24 +45,22 @@ signUpBttn.addEventListener("click", () => {
     const value = document.getElementById(input.id).value.trim();
 
     if (!value) {
-      errorDiv.textContent = `${input.name} cannot be empty`;
+      showMessage("error", `${input.name} cannot be empty`);
       hasError = true;
       break;
     }
 
     if (value.length < input.minLength) {
-      errorDiv.textContent = `${input.name} must be at least ${input.minLength} characters`;
+      showMessage("error", `${input.name} must be at least ${input.minLength} characters`);
       hasError = true;
       break;
     }
 
     userData[input.id] = value;
   }
-  let anew = userData.name
-  console.log(JSON.stringify(anew))
 
   if (!hasError) {
-    fetch("http://localhost:5500/api/v1/auth/sign-up", {
+    fetch("https://signup-backend-4934.onrender.com/api/v1/auth/sign-up", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -66,53 +69,79 @@ signUpBttn.addEventListener("click", () => {
         password: userData.psswd
       })
     })
-    .then(async (res) => {
-      const responseData = await res.json().catch(() => ({}));
-      if (res.status === 409) {
-        console.warn("Conflict:", responseData);
-        errorDiv.style.cssText = "color: #ff9800; background-color: #fff4e5; border: 1px solid #ffd699; display: block;";
-        errorDiv.textContent = "User already exists";
-        throw new Error("Conflict: user already exists");
-      }
+      .then(async (res) => {
+        const responseData = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        console.error("HTTP Error:", res.status, responseData);
-        throw new Error(responseData.message || "Something went wrong with the request");
-      }
+        if (res.status === 409) {
+          showMessage("warning", "User already exists");
+          throw new Error("Conflict: user already exists");
+        }
 
-      return responseData;
-    })
-    .then((data) => {
-      if (!data || !data.data || !data.data.user) {
-        console.error("Invalid server response:", data);
-        throw new Error("Invalid server response");
-      }
+        if (!res.ok) {
+          throw new Error(responseData.message || "Something went wrong with the request");
+        }
 
-      const userId = data.data.user._id;
+        return responseData;
+      })
+      .then((data) => {
+        if (!data || !data.data || !data.data.user) {
+          throw new Error("Invalid server response");
+        }
 
-      console.log("Response received:", data);
+        console.log("Response received:", data);
 
-      window.open('http://localhost:5500/api/v1/auth/users/json', '_blank');
-
-      errorDiv.style.cssText = "color: #2deb14; background-color: #c8f3c8af; border: 1px solid #c6f5c8; display: block;";
-      errorDiv.textContent = data.message || "User created successfully";
-
-      localStorage.setItem(userId, JSON.stringify(data.data.user));
-    })
-    .catch((err) => {
-      console.error("Error:", err);
-      if (!errorDiv.textContent.includes("User already exists")) {
-        errorDiv.style.cssText = "color: #ff0000; background-color: #f8d7da; border: 1px solid #f5c2c7; display: block;";
-        errorDiv.textContent = err.message;
-      }
-    });
+        showMessage(
+          "success",
+          data.message ||
+            'User created successfully <br> click <a href="https://signup-backend-4934.onrender.com/api/v1/auth/users/response.json" target="_blank">here</a>',
+          true
+        );
+      })
+      .catch((err) => {
+        if (!errorDiv.textContent.includes("User already exists")) {
+          showMessage("error", err.message);
+        }
+      });
+  } else {
+    errorDiv.style.display = "block";
   }
-   else {
-    errorDiv.style.display = "block"; 
-  }
-
-  hasRun = true;
 });
 
 
+
+
+// status: Update every 6 seconds... only if there's any change from backend
+
+let lastStatus = null;
+
+function statusCheck() {
+  const statusDisplayIcon = document.querySelector('.st_icon');
+  const statusDisplayText = document.querySelector('.st_txt');
+
+  fetch('https://signup-backend-4934.onrender.com/')
+    .then(res => {
+      let newStatus = res.ok ? 'online' : 'offline';
+
+      if (newStatus !== lastStatus) {
+        statusDisplayText.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        statusDisplayIcon.className = `st_icon ${newStatus}`;
+        lastStatus = newStatus;
+        console.log(`Status changed to ${newStatus} at:`, new Date().toLocaleString());
+      }
+    })
+    .catch(error => {
+      const newStatus = 'error';
+      if (newStatus !== lastStatus) {
+        statusDisplayText.textContent = "Error";
+        statusDisplayIcon.className = `st_icon ${newStatus}`;
+        lastStatus = newStatus;
+        console.error("Failed to connect:", error);
+      }
+    });
+}
+
+
+
+statusCheck();
+setInterval(statusCheck, 10000);
 
