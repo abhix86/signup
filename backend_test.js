@@ -1,21 +1,20 @@
-// Initializing the buttons to variable
 
-const signUpBttn = document.getElementById('sign-up')
-const signInBttn = document.getElementById('sign-in')
-const deleteBttn = document.getElementById('del')
-
+const signUpBttn = document.getElementById('sign-up');
+const signInBttn = document.getElementById('sign-in');
+const deleteBttn = document.getElementById('del');
 
 const errorDiv = document.getElementById("error-msg");
+const popup = document.getElementById("popup");
 
 const inputs = [
   { id: "name", name: "Name", minLength: 4 },
   { id: "email", name: "Email", minLength: 4 },
   { id: "psswd", name: "Password", minLength: 4 }
 ];
-let hasRun = '';
+
 
 function showMessage(type, message, isHtml = false) {
-  errorDiv.classList.remove("error", "success", "warning");
+  errorDiv.className = ""; 
   errorDiv.classList.add(type);
   errorDiv.style.display = "block";
   if (isHtml) {
@@ -25,21 +24,30 @@ function showMessage(type, message, isHtml = false) {
   }
 }
 
+
+function showPopup(message) {
+  popup.textContent = message;
+  popup.style.display = "block";
+  setTimeout(() => {
+    popup.style.display = "none";
+  }, 800000000);
+}
+
+
 signInBttn.addEventListener('click', () => {
   showMessage("error", "Oopsie: No API endpoint found for sign-in!");
 });
+
 deleteBttn.addEventListener('click', () => {
   showMessage("error", "Oopsie: No API endpoint found for delete-account!");
 });
 
 
-
-
 signUpBttn.addEventListener("click", () => {
-  let hasError = false;
   errorDiv.style.display = "none";
 
   const userData = {};
+  let hasError = false;
 
   for (let input of inputs) {
     const value = document.getElementById(input.id).value.trim();
@@ -59,58 +67,64 @@ signUpBttn.addEventListener("click", () => {
     userData[input.id] = value;
   }
 
-  if (!hasError) {
-    fetch("https://signup-backend-4934.onrender.com/api/v1/auth/sign-up", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: userData.name,
-        email: userData.email,
-        password: userData.psswd
-      })
+  if (hasError) return;
+
+  fetch("https://signup-backend-4934.onrender.com/api/v1/auth/sign-up", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: userData.name,
+      email: userData.email,
+      password: userData.psswd
     })
-      .then(async (res) => {
-        const responseData = await res.json().catch(() => ({}));
+  })
+    .then(async (res) => {
+      const responseData = await res.json().catch(() => ({}));
 
-        if (res.status === 409) {
-          showMessage("warning", "User already exists");
-          throw new Error("Conflict: user already exists");
-        }
+      if (res.status === 409) {
+        showMessage("warning", "User already exists");
+        throw new Error("Conflict: user already exists");
+      }
 
-        if (!res.ok) {
-          throw new Error(responseData.message || "Something went wrong with the request");
-        }
+      if (!res.ok) {
+        throw new Error(responseData.message || "Something went wrong with the request");
+      }
 
-        return responseData;
-      })
-      .then((data) => {
-        if (!data || !data.data || !data.data.user) {
-          throw new Error("Invalid server response");
-        }
+      return responseData;
+    })
+    .then((data) => {
+      if (!data || !data.data || !data.data.user) {
+        throw new Error("Invalid server response");
+      }
 
-        console.log("Response received:", data);
+      console.log("Response received:", data);
 
-        showMessage(
-          "success",
-          data.message ||
-            'User created successfully <br> click <a href="https://signup-backend-4934.onrender.com/api/v1/auth/users/response.json" target="_blank">here</a>',
-          true
-        );
-      })
-      .catch((err) => {
-        if (!errorDiv.textContent.includes("User already exists")) {
-          showMessage("error", err.message);
-        }
-      });
-  } else {
-    errorDiv.style.display = "block";
-  }
+      showMessage(
+        "success",
+
+          'User created successfully <br> click <a href="https://signup-backend-4934.onrender.com/api/v1/auth/users/response.json" target="_blank">here</a>',
+        true
+      );
+
+
+      showPopup(`Welcome, ${userData.name}!`);
+
+      
+    })
+    .catch((err) => {
+      if (!errorDiv.textContent.includes("User already exists")) {
+        showMessage("error", err.message);
+      }
+    });
 });
 
 
 
 
-// status: Update every 6 seconds... only if there's any change from backend
+
+
+
+
 
 let lastStatus = null;
 
@@ -140,8 +154,5 @@ function statusCheck() {
     });
 }
 
-
-
 statusCheck();
 setInterval(statusCheck, 10000);
-
